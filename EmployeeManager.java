@@ -1,25 +1,20 @@
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
 import javafx.application.Application;
-import javafx.beans.property.SimpleFloatProperty;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
-import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.layout.VBox;
 
 public class EmployeeManager extends Application {
 
-    private HashMap<Integer, EmployeeNode> employeeNodes = new HashMap<>();
-
-    private EmployeeNode rootEmployeeNode;
+    private MangerEmployee ceo;
     private TreeView<Employee> treeView;
 
     public static void main(String[] args) {
@@ -28,53 +23,31 @@ public class EmployeeManager extends Application {
 
     private void populateEmployeeNodes() {
 
-        Employee ceo = new Employee("Mr. CEO", "CEO", 10000);
-        Employee vpMarketing = new Employee("VP Mkt", "VP", 9000);
-        Employee vpProduction = new Employee("VP Prod", "VP", 9000);
-        Employee mgrSales = new Employee("Sales Mgr", "Manager", 8000);
-        Employee mgrMarketing = new Employee("Marketing Mgr", "Manager", 8000);
-        Employee mgrProduction = new Employee("Prod Mgr", "Manager", 8000);
-        Employee mgrShipping = new Employee("Shipping Mgr", "Manager", 8000);
-        Employee asst1Sales = new Employee("Sales", "Assistant", 5000);
-        Employee asst2Sales = new Employee("Sales", "Assistant", 5000);
-        Employee asstMarketing = new Employee("Secy", "Assistant", 5000);
-        Employee asst1Production = new Employee("Manual", "Assistant", 5000);
-        Employee asst2Production = new Employee("Manual", "Assistant", 5000);
-        Employee asst3Production = new Employee("Manual", "Assistant", 5000);
-        Employee asst1Ship = new Employee("Ship", "Assistant", 5000);
-        Employee asst2Ship = new Employee("Ship", "Assistant", 5000);
+        ceo = new MangerEmployee("Mr. CEO", 10000);
+        MangerEmployee vpMarketing = new MangerEmployee("VP Mkt", 9000);
+        MangerEmployee vpProduction = new MangerEmployee("VP Prod", 9000);
+        MangerEmployee mgrSales = new MangerEmployee("Sales Mgr", 8000);
+        MangerEmployee mgrMarketing = new MangerEmployee("Marketing Mgr", 8000);
+        MangerEmployee mgrProduction = new MangerEmployee("Prod Mgr", 8000);
+        MangerEmployee mgrShipping = new MangerEmployee("Shipping Mgr", 8000);
+        Employee asst1Sales = new OrdinaryEmployee("Sales",  5000);
+        Employee asst2Sales = new OrdinaryEmployee("Sales",  5000);
+        Employee asstMarketing = new OrdinaryEmployee("Secy",  5000);
+        Employee asst1Production = new OrdinaryEmployee("Manual",  5000);
+        Employee asst2Production = new OrdinaryEmployee("Manual",  5000);
+        Employee asst3Production = new OrdinaryEmployee("Manual",  5000);
+        Employee asst1Ship = new OrdinaryEmployee("Ship",  5000);
+        Employee asst2Ship = new OrdinaryEmployee("Ship",  5000);
 
-        EmployeeNode ceoNode = new EmployeeNode(ceo);
-        ceoNode.children.addAll(vpMarketing, vpProduction);
+        ceo.addSubordinates(vpMarketing, vpProduction);
+        vpMarketing.addSubordinates(mgrSales, mgrMarketing);
+        vpProduction.addSubordinates(mgrProduction, mgrShipping);
 
-        EmployeeNode marketingNode = new EmployeeNode(vpMarketing);
-        marketingNode.children.addAll(mgrSales, mgrMarketing);
+        mgrSales.addSubordinates(asst1Sales, asst2Sales);
+        mgrMarketing.addSubordinates(asstMarketing);
+        mgrProduction.addSubordinates(asst1Production, asst2Production, asst3Production);
+        mgrShipping.addSubordinates(asst1Ship, asst2Ship);
 
-        EmployeeNode productionNode = new EmployeeNode(vpProduction);
-        productionNode.children.addAll(mgrProduction, mgrShipping);
-
-        EmployeeNode mgrSalesNode = new EmployeeNode(mgrSales);
-        mgrSalesNode.children = FXCollections.observableArrayList(asst1Sales, asst2Sales);
-
-        EmployeeNode mgrMarketingNode = new EmployeeNode(mgrMarketing);
-        mgrMarketingNode.children.addAll(asstMarketing);
-
-        EmployeeNode mgrProductionNode = new EmployeeNode(mgrProduction);
-        mgrProductionNode.children.addAll(asst1Production, asst2Production, asst3Production);
-
-
-        EmployeeNode mgrShippingNode = new EmployeeNode(mgrShipping);
-        mgrShippingNode.children.addAll(asst1Ship, asst2Ship);
-
-        employeeNodes.put(ceo.employeeId, ceoNode);
-        employeeNodes.put(vpMarketing.employeeId, marketingNode);
-        employeeNodes.put(vpProduction.employeeId, productionNode);
-        employeeNodes.put(mgrSales.employeeId, mgrSalesNode);
-        employeeNodes.put(mgrMarketing.employeeId, mgrMarketingNode);
-        employeeNodes.put(mgrProduction.employeeId, mgrProductionNode);
-        employeeNodes.put(mgrShipping.employeeId, mgrShippingNode);
-
-        rootEmployeeNode = ceoNode;
     }
 
     @Override
@@ -82,33 +55,31 @@ public class EmployeeManager extends Application {
 
         populateEmployeeNodes();
 
-        List<EmployeeNode> nodesToAdd = new ArrayList<>();
-        List<EmployeeNode> recruits = new ArrayList<>();
-        nodesToAdd.add(rootEmployeeNode);
+        List<MangerEmployee> employeesToAdd = new ArrayList<>();
+        List<MangerEmployee> recruits = new ArrayList<>();
+        employeesToAdd.add(ceo);
         HashMap<Integer, TreeItem<Employee>> treeItems = new HashMap<>();
 
-        TreeItem<Employee> rootNode = new TreeItem<>(rootEmployeeNode.self);
+        TreeItem<Employee> rootNode = new TreeItem<>(ceo);
         rootNode.setExpanded(true);
 
-        treeItems.put(rootEmployeeNode.self.employeeId, rootNode);
-
-        TreeItem<Employee> savedNode, newNode;
-        while(nodesToAdd.size() > 0) {
+        treeItems.put(ceo.getId(), rootNode);
+        TreeItem<Employee> parentNode, childNode;
+        while (employeesToAdd.size() > 0) {
             recruits.clear();
-            for(EmployeeNode node: nodesToAdd) {
-                savedNode = treeItems.get(node.self.employeeId);
-                treeItems.put(node.self.employeeId, savedNode);
-                for(Employee emp: node.children) {
-                    newNode = new TreeItem<>(emp);
-                    savedNode.getChildren().add(newNode);
-                    treeItems.put(emp.employeeId, newNode);
-                    if(employeeNodes.get(emp.employeeId) != null) {
-                        recruits.add(employeeNodes.get(emp.employeeId));
+            for (MangerEmployee manager : employeesToAdd) {
+                parentNode = treeItems.get(manager.getId());
+                for (Employee emp : manager.getSubordinates()) {
+                    childNode = new TreeItem<>(emp);
+                    parentNode.getChildren().add(childNode);
+                    treeItems.put(emp.getId(), childNode);
+                    if (emp.isManager()) {
+                        recruits.add((MangerEmployee) emp);
                     }
                 }
             }
-            nodesToAdd.clear();
-            nodesToAdd.addAll(recruits);
+            employeesToAdd.clear();
+            employeesToAdd.addAll(recruits);
         }
 
 
@@ -126,33 +97,6 @@ public class EmployeeManager extends Application {
         stage.show();
     }
 
-    private float computeSalary(Employee employee) {
-        float salaryTotal = employee.getSalary();
-        EmployeeNode topNode = employeeNodes.get(employee.employeeId);
-        if(topNode == null) {
-            return salaryTotal;
-        }
-        List<EmployeeNode> nodesToProcess = new ArrayList<>();
-        List<EmployeeNode> temporaryNodes = new ArrayList<>();
-        EmployeeNode empNode;
-        nodesToProcess.add(topNode);
-        while(nodesToProcess.size() > 0) {
-            temporaryNodes.clear();
-            for(EmployeeNode node: nodesToProcess) {
-                for(Employee emp: node.children) {
-                    salaryTotal += emp.getSalary();
-                    empNode = employeeNodes.get(emp.employeeId);
-                    if(empNode != null) {
-                        temporaryNodes.add(empNode);
-                    }
-                }
-            }
-            nodesToProcess.clear();
-            nodesToProcess.addAll(temporaryNodes);
-        }
-        return salaryTotal;
-    }
-
     private final class TextFieldTreeCellImpl extends TreeCell<Employee> {
 
         private TextField textField;
@@ -163,16 +107,22 @@ public class EmployeeManager extends Application {
             MenuItem addMenuItem = new MenuItem("Add Employee");
             contextMenu.getItems().add(addMenuItem);
             addMenuItem.setOnAction(t -> {
-                Employee emp = new Employee("New Employee", "Whatever", 1000);
-                EmployeeNode employeeNode = employeeNodes.get(getItem().employeeId);
-                if(employeeNode == null) {
-                    employeeNode = new EmployeeNode(getItem());
-                    employeeNodes.put(getItem().employeeId, employeeNode);
+
+                if(getItem().isManager()) {
+                    MangerEmployee parent = (MangerEmployee)getItem();
+                    Employee sibling = parent.getSubordinates().size() > 0 ? parent.getSubordinates().get(0) : null;
+                    Employee newEmployee;
+                    if(sibling == null || !sibling.isManager()) {
+                        float salary = sibling == null ? 5000 : sibling.getSalary();
+                        newEmployee = new OrdinaryEmployee("New Employee",  salary);
+                    } else  {
+                        newEmployee = new MangerEmployee("New Manager",  sibling.getSalary());
+                    }
+                    parent.addSubordinates(newEmployee);
+                    TreeItem<Employee> newNode = new TreeItem<>(newEmployee);
+                    getTreeItem().getChildren().add(newNode);
                 }
-                employeeNodes.get(getItem().employeeId).children.add(emp);
-                TreeItem<Employee> newEmployee =
-                        new TreeItem<>(emp);
-                getTreeItem().getChildren().add(newEmployee);
+
             });
 
             MenuItem removeMenuItem = new MenuItem("Remove Employee");
@@ -181,7 +131,7 @@ public class EmployeeManager extends Application {
                 TreeItem c = treeView.getSelectionModel().getSelectedItem();
                 c.getParent().getChildren().remove(c);
                 Employee emp = (Employee) c.getValue();
-                employeeNodes.remove(emp.employeeId);
+                emp.getParent().removeSubordinate(emp);
             });
 
             MenuItem salaryMenuItem = new MenuItem("Compute Salary");
@@ -189,7 +139,7 @@ public class EmployeeManager extends Application {
             salaryMenuItem.setOnAction(t -> {
                 TreeItem c = treeView.getSelectionModel().getSelectedItem();
                 Employee emp = (Employee) c.getValue();
-                float totalSalary = computeSalary(emp);
+                float totalSalary = emp.getControlSpanCost();
                 Alert alert = new Alert(Alert.AlertType.INFORMATION);
                 alert.setTitle("Salary Information");
                 alert.setHeaderText(null);
@@ -258,67 +208,113 @@ public class EmployeeManager extends Application {
             return getItem() == null ? "" : getItem().getName();
         }
     }
+    
+    static abstract class Employee {
 
-    public static class Employee {
-
-        private final SimpleStringProperty name;
-        private final SimpleStringProperty role;
-        private final SimpleFloatProperty salary;
+        private String name;
+        private float salary;
         private int employeeId;
+        private MangerEmployee parent;
 
         private static int counter = 0;
 
-        private Employee(String name, String role, float salary) {
-            this.name = new SimpleStringProperty(name);
-            this.role = new SimpleStringProperty(role);
-            this.salary = new SimpleFloatProperty(salary);
+        private Employee(String name, float salary) {
+            this.name = name;
+            this.salary = salary;
             counter++;
             this.employeeId = counter;
         }
 
-        @SuppressWarnings("unused")
-        String getName() {
-            return name.get();
-        }
-
-        @SuppressWarnings("unused")
-        void setName(String fName) {
-            name.set(fName);
-        }
-
-        @SuppressWarnings("unused")
-        String getRole() {
-            return role.get();
-        }
-
-        @SuppressWarnings("unused")
-        public void setRole(String fName) {
-            role.set(fName);
-        }
-
-        float getSalary() {
-            return salary.get();
-        }
-
-        @SuppressWarnings("unused")
-        public void setSalary(float salary) {
-            this.salary.set(salary);
-        }
 
         @Override
         public String toString() {
-            return this.name.get();
+            return this.getName();
+        }
+
+        String getName() {
+            return name;
+        }
+
+        int getId() {
+            return employeeId;
+        }
+
+        void setName(String name) {
+            this.name = name;
+        }
+
+        float getSalary() {
+            return salary;
+        }
+
+        abstract float getControlSpanCost();
+
+        abstract boolean isManager();
+
+        MangerEmployee getParent() {
+            return parent;
+        }
+
+        void setParent(MangerEmployee manager) {
+            this.parent = manager;
         }
     }
 
-    public static class EmployeeNode {
+    static class OrdinaryEmployee extends Employee {
 
-        EmployeeNode(Employee self) {
-            this.self = self;
-            this.children = FXCollections.observableArrayList();
+        OrdinaryEmployee(String name, float salary) {
+            super(name, salary);
         }
 
-        Employee self;
-        ObservableList<Employee> children;
+        @Override
+        float getControlSpanCost() {
+            return this.getSalary();
+        }
+
+        @Override
+        boolean isManager() {
+            return false;
+        }
+
     }
+
+    static class MangerEmployee extends Employee {
+
+        private List<Employee> subordinates;
+
+        MangerEmployee(String name, float salary) {
+            super(name, salary);
+            subordinates = new ArrayList<>();
+        }
+
+        @Override
+        float getControlSpanCost() {
+            float controlCost = getSalary();
+            for (Employee emp : subordinates) {
+                controlCost += emp.getControlSpanCost();
+            }
+            return controlCost;
+        }
+
+        @Override
+        boolean isManager() {
+            return true;
+        }
+
+        void addSubordinates(Employee... employees) {
+            for(Employee emp: employees) {
+                emp.setParent(this);
+            }
+            Collections.addAll(subordinates, employees);
+        }
+
+        List<Employee> getSubordinates() {
+            return subordinates;
+        }
+
+        void removeSubordinate(Employee emp) {
+            subordinates.remove(emp);
+        }
+    }
+
 }
